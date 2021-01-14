@@ -15,7 +15,9 @@ from __future__ import absolute_import
 import io
 import json
 import logging
+import platform
 import re
+import socket
 import ssl
 
 import certifi
@@ -70,6 +72,22 @@ class RESTClientObject(object):
             ca_certs = certifi.where()
 
         addition_pool_args = {}
+
+        socket_options = [
+            (socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1),
+        ]
+        if platform.system() == "Linux":
+            idle = 5
+            intvl = 3
+            cnt = 3
+            socket_options.extend([
+                (socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, idle),
+                (socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, intvl),
+                (socket.IPPROTO_TCP, socket.TCP_KEEPCNT, cnt),
+                (socket.IPPROTO_TCP, socket.TCP_USER_TIMEOUT, idle + intvl * cnt)
+            ])
+        addition_pool_args["socket_options"] = socket_options
+
         if configuration.assert_hostname is not None:
             addition_pool_args['assert_hostname'] = configuration.assert_hostname  # noqa: E501
 
